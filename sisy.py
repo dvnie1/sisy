@@ -61,15 +61,21 @@ def collect():
     WHERE collection_done = FALSE
     ''').fetchall()
 
+    print(f"Subreddits to collect from: {len(working_sub_list)}")
+
     for sub in working_sub_list:
         subreddit_id, subreddit_name = sub
         current = reddit_api.subreddit(subreddit_name)
 
+        print(f"Collecting from {subreddit_name}")
+        c = 0
         for post in current.hot(limit=per_sub_limit):
             cursor.execute('''
             INSERT INTO PostTitles (title, subreddit_id)
             VALUES (?, ?)
             ''', (post.title, subreddit_id))
+            c += 1
+            print(f"{c}/{per_sub_limit} posts collected from {subreddit_name}")
 
         cursor.execute('''
         UPDATE Subreddits 
@@ -78,9 +84,6 @@ def collect():
         ''', (per_sub_limit, subreddit_id))
 
         conn.commit()
-
-        pause_time = random.uniform(0.01, 0.2)
-        time.sleep(pause_time)
 
 
 def export():
