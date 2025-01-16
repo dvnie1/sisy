@@ -69,13 +69,22 @@ def collect():
 
         print(f"Collecting from {subreddit_name}")
         c = 0
-        for post in current.hot(limit=per_sub_limit):
-            cursor.execute('''
-            INSERT INTO PostTitles (title, subreddit_id)
-            VALUES (?, ?)
-            ''', (post.title, subreddit_id))
-            c += 1
-            print(f"{c}/{per_sub_limit} posts collected from {subreddit_name}")
+        stop_collecting = False
+        for time_filter in ['day', 'week', 'month', 'year', 'all']:
+            if stop_collecting:
+                break
+            for post in current.top(limit=None, time_filter=time_filter):
+                cursor.execute('''
+                INSERT INTO PostTitles (title, subreddit_id)
+                VALUES (?, ?)
+                ''', (post.title, subreddit_id))
+                c += 1
+                print(f"{c}/{per_sub_limit} posts collected from {subreddit_name}")
+                if c % 500 == 0:
+                    time.sleep(1)
+                if c >= per_sub_limit:
+                    stop_collecting = True
+                    break
 
         cursor.execute('''
         UPDATE Subreddits 
@@ -84,6 +93,7 @@ def collect():
         ''', (per_sub_limit, subreddit_id))
 
         conn.commit()
+        time.sleep(2)
 
 
 def export():
